@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head>
+    <title>content-viewer demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+
+    <link rel="import" href="../content-viewer.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+    </style>
+  </head>
+  <body>
+
+    <div class="vertical-section-container centered">
+      <h3>Content-viewer Demo: images</h3>
+      <demo-snippet>
+        <template>
+          <content-viewer file="resources/example.jpg"></content-viewer>
+        </template>
+      </demo-snippet>
+    </div>
+
+    <h3>Content-viewer Demo: PDFs</h3>
+    <demo-snippet>
+      <template>
+        <content-viewer file="resources/example.pdf"></content-viewer>
+      </template>
+    </demo-snippet>
+  </div>
+
+  <h3>Content-viewer Demo: XMLs</h3>
+  <demo-snippet>
+    <template>
+      <content-viewer file="resources/example.xml"></content-viewer>
+    </template>
+  </demo-snippet>
+
+  <h3>Content-viewer Demo: unsupported files</h3>
+  <demo-snippet>
+    <template>
+      <content-viewer file="resources/example.txt"></content-viewer>
+    </template>
+  </demo-snippet>
+</div>
+
+  </body>
+</html>

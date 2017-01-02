@@ -1,0 +1,311 @@
+<!--bower elements-->
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-icons/iron-icons.html">
+<link rel="import" href="../pdf-element/pdf-element.html">
+<link rel="import" href="../pdf-element/pdf-element.html">
+<link rel="stylesheet" href="../bootstrap/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="../xml_display/XMLDisplay.css"async>
+
+<!--scripts-->
+<script src="../jquery/dist/jquery.min.js"></script>
+<script src="../xml_display/XMLDisplay.js" async></script>
+
+
+<dom-module id="content-viewer">
+
+  <template>
+    <style>
+      @font-face {
+        font-family:"PT Sans";
+        src: url("resources/pt_sans-web-regular.ttf")
+      }
+
+      :host {
+        font-family: "PT Sans", sans-serif;
+      }
+
+      .panel {
+        border-radius: 0px;
+      }
+
+      .well {
+        border-radius: 0px;
+      }
+
+      img {
+        margin-left: auto;
+        margin-right: auto;
+        display: block;
+        max-width: 100%;
+      }
+
+      pdf-element {
+        --pdf-element-toolbar: {
+          /* other toolbar css properties */
+        };
+        --pdf-element-toolbar-height: 40px;
+      }
+
+      iron-icon {
+        --iron-icon-height: 50px;
+        --iron-icon-width: 50px;
+        --iron-icon-fill-color: var(--paper-grey-500);
+      }
+
+      #notSupportedPreviewer {
+        display: flex;
+        height: 100%
+        cursor: pointer;
+      }
+
+      #notSupportedContent {
+        text-align: center;
+        margin: auto;
+        height: 100px;
+        font-weight: bold;
+      }
+    </style>
+
+    <template is="dom-if" if="[[_fileIsPDF]]">
+        <pdf-element id="pdfViewer"
+                     src$="[[file]]"
+                     show-spinner
+                     enable-text-selection
+                     height="700"
+                     elevation="0"
+                     downloadable>
+        </pdf-element>
+    </template>
+
+    <template is="dom-if" if="[[_fileIsImage]]">
+      <div class="panel panel-default">
+        <div class="panel-heading">Preview:</div>
+        <div class="panel-body">
+          <img src="[[file]]">
+        </div>
+      </div>
+    </template>
+
+    <template is="dom-if" if="[[_fileIsXML]]">
+      <div class="panel panel-default">
+        <div class="panel-heading">Preview:</div>
+        <div class="panel-body" id="XMLViewer"></div>
+      </div>
+    </template>
+
+    <template is="dom-if" if="[[_fileIsNotSupported]]">
+      <div id="notSupportedPreviewer" class="well" on-tap="downloadFile">
+        <div id="notSupportedContent">
+          It is not possible to preview this file.<p/>
+          In order to view this file, please click here to download it.<p/><p/>
+          <iron-icon icon="file-download"></iron-icon>
+        </div>
+      </div>
+    </template>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'content-viewer',
+      properties: {
+
+        _supportedExtensions: {
+          type: Object,
+          value: {
+            "application/pdf": [".pdf"],
+            "image/jpeg": [".jpg", ".jpeg"],
+            "image/png": [".png"],
+            "image/bmp": [".bmp", ".bm"],
+            "image/x-windows-bmp": [".bmp"],
+            "image/gif": [".gif"],
+            "application/xml": [".xml"],
+            "text/xml": [".xml"],
+          }
+        },
+
+        file: {
+          type: String,
+          value: null,
+          observer: 'fileChanged'
+        },
+
+        _fileIsPDF: {
+          type: Boolean,
+          value: false
+        },
+
+        _fileIsImage: {
+          type: Boolean,
+          value: false
+        },
+
+        _fileIsXML: {
+          type: Boolean,
+          value: false
+        },
+
+        _fileIsNotSupported: {
+          type: Boolean,
+          value: false
+        }
+      },
+
+      /**
+       * Observer for changes in the file url/path
+       * @return void
+       */
+      fileChanged: function(){
+
+        this._fileIsPDF = this.isPDF(this.file);
+        this._fileIsImage = this.isImage(this.file);
+        this._fileIsXML = this.isXML(this.file);
+        this._fileIsNotSupported = !this._fileIsPDF && !this._fileIsImage && !this._fileIsXML;
+
+        if(this._fileIsXML){
+          this.showXMLString();
+        }
+      },
+
+      /**
+       * Checks if extension belongs to array of mimetypes
+       * Only compares to mimetypes the previewer can open
+       * @param {Array} typeArray - array of mimetype strings
+       * @param {String} extension - extension of the file
+       * @return {Boolean} result
+       */
+      isMimetype: function(typeArray, extension){
+
+        if(typeArray.constructor !== Array){
+          console.error("The parameter provided for the Mimetype comparison is not an array");
+          return false;
+        }
+
+        var self = this;
+
+        // the some() method tests a condition on all the values of an array until it finds a true one and returns
+        return typeArray.some(function(typeValue){
+          return self._supportedExtensions[typeValue].some(function(extensionValue){
+            return extensionValue == extension;
+          });
+        });
+      },
+
+      /**
+       * Obtain the extension of a file name
+       * @param {String} file - the file url/path
+       * @return {String} extension
+       */
+      getFileNameExtension: function(file){
+        var indexOfVersion = file.lastIndexOf("?");
+        if(indexOfVersion == -1)
+          return file.substring(file.lastIndexOf("."));
+        else
+          return file.substring(file.lastIndexOf("."), indexOfVersion);
+      },
+
+      /**
+       * Checks if a file is a PDF
+       * @param {String} file - the file url/path
+       * @return {Boolean} result
+       */
+      isPDF: function(file){
+        if(!file) return false;
+        var extension = this.getFileNameExtension(file);
+
+        return this.isMimetype(["application/pdf"], extension)
+      },
+
+      /**
+       * Checks if a file is an image supported by the previewer
+       * @param {String} file - the file url/path
+       * @return {Boolean} result
+       */
+      isImage: function(file){
+        if(!file) return false;
+        var extension = this.getFileNameExtension(file);
+
+        return this.isMimetype(['image/jpeg', 'image/png', 'image/bmp', 'image/x-windows-bmp', 'image/gif'], extension)
+      },
+
+      /**
+       * Checks if a file is an XML
+       * @param {String} file - the file url/path
+       * @return {Boolean} result
+       */
+      isXML: function(file){
+        if(!file) return false;
+        var extension = this.getFileNameExtension(file);
+
+        return this.isMimetype(['application/xml', 'text/xml'], extension);
+      },
+
+      /**
+       * Puts XML content in the XMLViewer div
+       * @param {String} file - the file url/path
+       * @return void
+       */
+      showXMLString: function(){
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+          if (this.readyState == 4 && this.status == 200) {
+            LoadXMLString('XMLViewer', this.response);
+          }
+        };
+        xmlhttp.open("GET", this.file, true);
+        xmlhttp.send();
+      },
+
+      /**
+       * Action to download a file
+       * @return void
+       */
+      downloadFile: function(){
+        window.open(this.file);
+        window.focus();
+      },
+
+      /**
+       * Returns an array of supported Mimetypes
+       * @return {Array} supported mimetypes
+       */
+      getSupportedMimetypes: function(){
+        var typeArray = [];
+        for(var key in this._supportedExtensions)
+          typeArray.push(key);
+
+        return typeArray;
+      },
+
+      /**
+       * Returns an array of supported extensions
+       * @return {Array} supported extensions
+       */
+      getSupportedExtensions: function() {
+        var extensionArray = [];
+        for(var key in this._supportedExtensions)
+          this._supportedExtensions[key].forEach(function(value){
+            if (extensionArray.indexOf(value) == -1)
+              extensionArray.push(value);
+          });
+
+        return extensionArray;
+      },
+
+      /**
+       * Force reload content by adding a parameter that will
+       * trigger a new download of the content
+       * @return void
+       */
+      loadContent: function() {
+        if(this.file)
+          if(this.file.indexOf("?") > -1)
+            this.file = this.file.substring(0, this.file.indexOf("?")+1) + new Date().getTime();
+          else
+            this.file = this.file + "?" + new Date().getTime();
+      }
+
+    });
+  </script>
+
+</dom-module>
